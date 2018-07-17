@@ -10,3 +10,55 @@
     1、当cpu1上的runqueue里一个可运行进程都没有的时候。这点很好理解，cpu1无事可作了，这时在cpu1上会调用load_balance，发现在cpu0上还有许多进程等待运行，那么它会从cpu0上的可运行进程里找到优先级最高的进程，拿到自己的runqueue里开始执行。
     2、第1种情形不适用于运行队列一直不为空的情况。例如，cpu0上一直有10个可运行进程，cpu1上一直有1个可运行进程，显然，cpu0上的进程们得到了不公平的对待，它们拿到cpu的时间要小得多，第1种情形下的load_balance也一直不会调用。所以，实际上，每经过一个时钟节拍，内核会调用scheduler_tick函数，而这个函数会做许多事，例如减少当前正在执行的进程的时间片，在函数结尾处则会调用rebalance_tick函数。rebalance_tick函数决定以什么样的频率执行负载均衡。
 
+
+    static void rebalance_tick(int this_cpu, runqueue_t *this_rq,
+                   enum idle_type idle)
+    {
+        unsigned long old_load, this_load;
+        unsigned long j = jiffies + CPU_OFFSET(this_cpu);
+        struct sched_domain *sd;
+
+        /* Update our load */
+        old_load = this_rq->cpu_load;
+        this_load = this_rq->nr_running * SCHED_LOAD_SCALE;
+        /*
+         * Round up the averaging division if load is increasing. This
+         * prevents us from getting stuck on 9 if the load is 10, for
+         * example.
+         */
+        if (this_load > old_load)
+            old_load++;
+        this_rq->cpu_load = (old_load + this_load) / 2;
+
+        for_each_domain(this_cpu, sd) {
+            unsigned long interval;
+
+            if (!(sd->flags & SD_LOAD_BALANCE))
+                continue;
+
+            interval = sd->balance_interval;
+            if (idle != SCHED_IDLE)
+                interval *= sd->busy_factor;
+
+            /* scale ms to jiffies */
+            interval = msecs_to_jiffies(interval);
+            if (unlikely(!interval))
+                interval = 1;
+
+            if (j - sd->last_balance >= interval) {
+                if (load_balance(this_cpu, this_rq, sd, idle)) {
+                    /* We've pulled tasks over so no longer idle */
+                    idle = NOT_IDLE;
+                }
+                sd->last_balance += interval;
+            }
+        }
+    }
+
+
+当idle标志位是SCHED_IDLE时，表示当前CPU处理器空闲，就会以很高的频繁来调用load_balance（1、2个时钟节拍），反之表示当前CPU并不空闲，会以很低的频繁调用load_balance（10-100ms）。具体的数值要看上面的interval了。 
+
+
+当然，多核CPU也有许多种，例如INTEL的超线程技术，而LINUX内核对一个INTEL超线程CPU会看成多个不同的CPU处理器。
+
+上面说过，如果你没有对你的进程做过特殊处理的话，LINUX内核是有可能把它放到多个CPU处理器上运行的，但是，有时我们如果希望我们的进程一直运行在某个CPU处理器上，可以做到吗？内核提供了这样的系统调用。系统调用sched_getaffinity会返回当前进程使用的cpu掩码，而sched_setaffinity则可以设定该进程只能在哪几颗cpu处理器上执行。当我们对某些进程有强烈的期待，或者想自己来考虑CPU间的负载均衡，可以这么试试哈。
