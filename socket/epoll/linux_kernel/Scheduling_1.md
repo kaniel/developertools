@@ -8,26 +8,26 @@
 
 首先看下面的优先级队列，每一个runqueue都有。runqueue是什么？下面会详细说下，现在大家可以理解为，内核为每一颗CPU分配了一个runqueue，用于维护这颗CPU可以运行的进程。runqueue里，有几个成员是prio_array类型，这个东东就是优先队列，先看看它的定义：
     struct prio_array {
-    	  unsigned int nr_active;    表示等待执行的进程总数
-    	  unsigned long bitmap[BITMAP_SIZE];    一个unsigned long在内核中只有32位哈，大家要跟64位OS上的C程序中的long区分开，那个是64位的。那么这个bitmap是干什么的呢？它是用位的方式，表示某个优先级上有没有待处理的队列，是实现快速找到最高待处理优先进程的关键。如果我定义了四种优先级，我只需要四位就能表示某个优先级上有没有进程要运行，例如优先级是2和3上有进程，那么就应该是0110.......非常省空间，效率也快，不是吗？
-    	  struct list_head queue[MAX_PRIO];     与上面的bitmap是对应的，它存储所有等待运行的进程。
+        unsigned int nr_active;    表示等待执行的进程总数
+    	unsigned long bitmap[BITMAP_SIZE];   一个unsigned long在内核中只有32位哈，大家要跟64位OS上的C程序中的long区分开，那个是64位的。那么这                 个bitmap是干什么的呢？它是用位的方式，表示某个优先级上有没有待处理的队列，是实现快速找到最高待处理优先进程的关键。如果我定义了四种优先级，我只需要四位就能表示某个优先级上有没有进程要运行，例如优先级是2和3上有进程，那么就应该是0110.......非常省空间，效率也快，不是吗？	
+    	struct list_head queue[MAX_PRIO];     与上面的bitmap是对应的，它存储所有等待运行的进程。
     };
     
 看看BITMAP_SIZE是怎么算出来的：#define BITMAP_SIZE ((((MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
 
 那么，LINUX默认配置（如果你用默认选项编译内核的话）MAX_PRIO是140，就是说一共内核对进程一共定义了140种优先级。等待某个CPU来处理的进程中，可能包含许多种优先级的进程，但，LINUX是个抢占式调度算法的操作系统，就是说，需要调度时一定是找到最高优先级的进程执行。上面的BITMAP_SIZE值根据MAX_PRIO算出来为5，那么bitmap实际是32*5=160位，这样就包含了MAX_PRIO的140位。优先级队列是怎么使用的？看2649行代码：idx = sched_find_first_bit(array->bitmap);这个方法就用来快速的找到优先级最高的队列。看看它的实现可以方便我们理解这个优先级位的设计：
-    static inline int sched_find_first_bit(unsigned long *b)
-    {
-	    if (unlikely(b[0]))
+	static inline int sched_find_first_bit(unsigned long *b)
+	{
+		if (unlikely(b[0]))
 		    return __ffs(b[0]);
-	    if (unlikely(b[1]))
+		if (unlikely(b[1]))
 		    return __ffs(b[1]) + 32;
-	    if (unlikely(b[2]))
+		if (unlikely(b[2]))
 		    return __ffs(b[2]) + 64;
-	    if (b[3])
+		if (b[3])
 		    return __ffs(b[3]) + 96;
-	    return __ffs(b[4]) + 128;
-    }
+		return __ffs(b[4]) + 128;
+	}
 
 那么__ffs是干什么的？
     static inline int __ffs(int x)
