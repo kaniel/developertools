@@ -10,7 +10,8 @@
     -[x] 1、当cpu1上的runqueue里一个可运行进程都没有的时候。这点很好理解，cpu1无事可作了，这时在cpu1上会调用load_balance，发现在cpu0上还有许多进程等待运行，那么它会从cpu0上的可运行进程里找到优先级最高的进程，拿到自己的runqueue里开始执行。
     -[x] 2、第1种情形不适用于运行队列一直不为空的情况。例如，cpu0上一直有10个可运行进程，cpu1上一直有1个可运行进程，显然，cpu0上的进程们得到了不公平的对待，它们拿到cpu的时间要小得多，第1种情形下的load_balance也一直不会调用。所以，实际上，每经过一个时钟节拍，内核会调用scheduler_tick函数，而这个函数会做许多事，例如减少当前正在执行的进程的时间片，在函数结尾处则会调用rebalance_tick函数。rebalance_tick函数决定以什么样的频率执行负载均衡。
 
-'''cpp
+
+    '''c
     static void rebalance_tick(int this_cpu, runqueue_t *this_rq,
                    enum idle_type idle)
     {
@@ -54,7 +55,7 @@
             }
         }
     }
-'''
+    '''
 
 当idle标志位是SCHED_IDLE时，表示当前CPU处理器空闲，就会以很高的频繁来调用load_balance（1、2个时钟节拍），反之表示当前CPU并不空闲，会以很低的频繁调用load_balance（10-100ms）。具体的数值要看上面的interval了。 
 
