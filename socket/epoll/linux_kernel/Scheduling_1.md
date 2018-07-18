@@ -8,11 +8,13 @@
 
 首先看下面的优先级队列，每一个runqueue都有。runqueue是什么？下面会详细说下，现在大家可以理解为，内核为每一颗CPU分配了一个runqueue，用于维护这颗CPU可以运行的进程。runqueue里，有几个成员是prio_array类型，这个东东就是优先队列，先看看它的定义：
 
-    struct prio_array {
-        unsigned int nr_active;    表示等待执行的进程总数
-    	unsigned long bitmap[BITMAP_SIZE];   一个unsigned long在内核中只有32位哈，大家要跟64位OS上的C程序中的long区分开，那个是64位的。那么这个bitmap是干什么的呢？它是用位的方式，表示某个优先级上有没有待处理的队列，是实现快速找到最高待处理优先进程的关键。如果我定义了四种优先级，我只需要四位就能表示某个优先级上有没有进程要运行，例如优先级是2和3上有进程，那么就应该是0110.......非常省空间，效率也快，不是吗？	
-    	struct list_head queue[MAX_PRIO];     与上面的bitmap是对应的，它存储所有等待运行的进程。
-    };
+'''c
+struct prio_array {
+unsigned int nr_active;    表示等待执行的进程总数
+unsigned long bitmap[BITMAP_SIZE];   一个unsigned long在内核中只有32位哈，大家要跟64位OS上的C程序中的long区分开，那个是64位的。那么这个bitmap是干什么的呢？它是用位的方式，表示某个优先级上有没有待处理的队列，是实现快速找到最高待处理优先进程的关键。如果我定义了四种优先级，我只需要四位就能表示某个优先级上有没有进程要运行，例如优先级是2和3上有进程，那么就应该是0110.......非常省空间，效率也快，不是吗？	
+struct list_head queue[MAX_PRIO];     与上面的bitmap是对应的，它存储所有等待运行的进程。
+};
+'''
     
 看看BITMAP_SIZE是怎么算出来的：#define BITMAP_SIZE ((((MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
 
