@@ -243,15 +243,22 @@ int main(int argc, char* argv[])
 我们先建立server端，等待服务；然后我们建立client端请求服务。
 
 server端：
+
 ![UDP_server_0](https://raw.githubusercontent.com/kaniel/developertools/master/socket/images/udp_server_print.jpg "udp_server_0")
 client端：
+
 ![UDP_client_0](https://raw.githubusercontent.com/kaniel/developertools/master/socket/images/udp_client_print.jpg "udp_client_0")
+
 自己主机跟自己通信不是很爽，我们想跟其他主机通信怎么搞？很简单，上面client的代码的第49行的注释打开，并注释掉下面那行，在宏定义里填入自己想通信的serverip就可以了。现象如下：
 
 server端：
+
 ![UDP_server_1](https://raw.githubusercontent.com/kaniel/developertools/master/socket/images/udp_server_print_1.jpg "udp_server_1")
+
 client端：
+
 ![UDP_client_1](https://raw.githubusercontent.com/kaniel/developertools/master/socket/images/udp_client_print_1.jpg "udp_client_1")
+
 这样我们就实现了主机172.0.5.183和172.0.5.182之间的网络通信。
 
 UDP通用框架搭建完成，我们可以利用该框架跟指定主机进行通信了。
