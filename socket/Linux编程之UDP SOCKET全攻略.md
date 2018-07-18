@@ -321,8 +321,8 @@ void udp_handler(int s, struct sockaddr* to)
 
 防止这样的永久阻塞的一般方法是给客户的recvfrom调用设置一个超时，大概有这么两种方法：
 ```
-1）使用信号SIGALRM为recvfrom设置超时。首先我们为SIGALARM建立一个信号处理函数，并在每次调用前通过alarm设置一个5秒的超时。如果recvfrom被
-我们的信号处理函数中断了，那就超时重发信息；若正常读到数据了，就关闭报警时钟并继续进行下去。
+1）使用信号SIGALRM为recvfrom设置超时。首先我们为SIGALARM建立一个信号处理函数，并在每次调用前通过alarm设置一个5秒的超时。
+如果recvfrom被我们的信号处理函数中断了，那就超时重发信息；若正常读到数据了，就关闭报警时钟并继续进行下去。
 2）使用select为recvfrom设置超时,设置select函数的第五个参数即可。
 ```
 ##### 3. udp报文乱序问题
