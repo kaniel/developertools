@@ -245,6 +245,7 @@ int main(int argc, char* argv[])
 server端：
 
 ![UDP_server_0](https://raw.githubusercontent.com/kaniel/developertools/master/socket/images/udp_server_print.jpg "udp_server_0")
+
 client端：
 
 ![UDP_client_0](https://raw.githubusercontent.com/kaniel/developertools/master/socket/images/udp_client_print.jpg "udp_client_0")
@@ -264,3 +265,39 @@ client端：
 UDP通用框架搭建完成，我们可以利用该框架跟指定主机进行通信了。
 
 如果想学习UDP的基础知识，以上的知识就足够了；如果想继续深入学习一下UDP SOCKET一些高级知识（奇技淫巧），可以花点时间往下看。
+
+#### 二、高级udp socket编程
+##### 1. udp的connect函数
+什么？UDP也有conenct？connect不是用于TCP编程的吗？
+
+是的，UDP网络编程中的确有connect函数，但它仅仅用于表示确定了另一方的地址，并没有其他含义。
+
+有了以上认识后，我们可以知道UDP套接字有以下区分：
+```
+1）未连接的UDP套接字
+2）已连接的UDP套接字
+```    
+对于未连接的套接字，也就是我们常用的的UDP套接字，我们使用的是sendto/recvfrom进行信息的收发，目标主机的IP和端口是在调用sendto/recvfrom时确定的；
+
+在一个未连接的UDP套接字上给两个数据报调用sendto函数内核将执行以下六个步骤：
+```
+1）连接套接字
+2）输出第一个数据报
+3）断开套接字连接
+4）连接套接字
+5）输出第二个数据报
+6）断开套接字连接
+```
+对于已连接的UDP套接字，必须先经过connect来向目标服务器进行指定，然后调用read/write进行信息的收发，目标主机的IP和端口是在connect时确定的，也就是说，一旦conenct成功，我们就只能对该主机进行收发信息了。
+
+已连接的UDP套接字给两个数据报调用write函数内核将执行以下三个步骤：
+```
+1）连接套接字
+2）输出第一个数据报
+3）输出第二个数据报
+```
+由此可以知道，当应用进程知道给同一个目的地址的端口号发送多个数据报时，显示套接字效率更高。
+
+下面给出带connect函数的UDP通信框架
+![UDP_2](https://raw.githubusercontent.com/kaniel/developertools/master/socket/images/udp_2.jpg "udp_2")
+具体框架代码不再给出了，因为跟上面不带connect的代码大同小异，仅仅多出一个connect函数处理而已，下面给出处理conenct()的基本步骤。
