@@ -299,6 +299,7 @@ UDP通用框架搭建完成，我们可以利用该框架跟指定主机进行�
 由此可以知道，当应用进程知道给同一个目的地址的端口号发送多个数据报时，显示套接字效率更高。
 
 下面给出带connect函数的UDP通信框架
+
 ![UDP_2](https://raw.githubusercontent.com/kaniel/developertools/master/socket/images/udp_2.jpg "udp_2")
 
 具体框架代码不再给出了，因为跟上面不带connect的代码大同小异，仅仅多出一个connect函数处理而已，下面给出处理conenct()的基本步骤。
