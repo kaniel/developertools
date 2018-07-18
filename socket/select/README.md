@@ -105,7 +105,7 @@ This module provides access to the BSD socket interface. It is available on all 
     (4. 关闭套接字(closesocket)
 
 3、socket tcp 编程实例，c/s程序
-
+```Python
 #!/bin/env python                                                         
 # -*- coding:utf8 -*-  
 """
@@ -130,8 +130,8 @@ while True:
         conn.close()                                                      
         break                                                             
 # s.close()
-
-
+```
+```Python
 #!/bin/env python                                                         
 # -*- coding:utf8 -*-                                                     
                                                                           
@@ -156,7 +156,7 @@ while True:
     if "good bye" in data:                                                
         break                                                             
 s.close()
-
+```
 ### 三、基于select的网络编程
 #### 1、select介绍
 
