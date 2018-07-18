@@ -10,51 +10,51 @@
 
 >2、第1种情形不适用于运行队列一直不为空的情况。例如，cpu0上一直有10个可运行进程，cpu1上一直有1个可运行进程，显然，cpu0上的进程们得到了不公平的对待，它们拿到cpu的时间要小得多，第1种情形下的load_balance也一直不会调用。所以，实际上，每经过一个时钟节拍，内核会调用scheduler_tick函数，而这个函数会做许多事，例如减少当前正在执行的进程的时间片，在函数结尾处则会调用rebalance_tick函数。rebalance_tick函数决定以什么样的频率执行负载均衡。
 
-    '''c
-    static void rebalance_tick(int this_cpu, runqueue_t *this_rq,
-                   enum idle_type idle)
-    {
-        unsigned long old_load, this_load;
-        unsigned long j = jiffies + CPU_OFFSET(this_cpu);
-        struct sched_domain *sd;
+```c
+static void rebalance_tick(int this_cpu, runqueue_t *this_rq,
+               enum idle_type idle)
+{
+    unsigned long old_load, this_load;
+    unsigned long j = jiffies + CPU_OFFSET(this_cpu);
+    struct sched_domain *sd;
 
-        /* Update our load */
-        old_load = this_rq->cpu_load;
-        this_load = this_rq->nr_running * SCHED_LOAD_SCALE;
-        /*
-         * Round up the averaging division if load is increasing. This
-         * prevents us from getting stuck on 9 if the load is 10, for
-         * example.
-         */
-        if (this_load > old_load)
-            old_load++;
-        this_rq->cpu_load = (old_load + this_load) / 2;
+    /* Update our load */
+    old_load = this_rq->cpu_load;
+    this_load = this_rq->nr_running * SCHED_LOAD_SCALE;
+    /*
+     * Round up the averaging division if load is increasing. This
+     * prevents us from getting stuck on 9 if the load is 10, for
+     * example.
+     */
+    if (this_load > old_load)
+        old_load++;
+    this_rq->cpu_load = (old_load + this_load) / 2;
 
-        for_each_domain(this_cpu, sd) {
-            unsigned long interval;
+    for_each_domain(this_cpu, sd) {
+        unsigned long interval;
 
-            if (!(sd->flags & SD_LOAD_BALANCE))
-                continue;
+        if (!(sd->flags & SD_LOAD_BALANCE))
+            continue;
 
-            interval = sd->balance_interval;
-            if (idle != SCHED_IDLE)
-                interval *= sd->busy_factor;
+        interval = sd->balance_interval;
+        if (idle != SCHED_IDLE)
+            interval *= sd->busy_factor;
 
-            /* scale ms to jiffies */
-            interval = msecs_to_jiffies(interval);
-            if (unlikely(!interval))
-                interval = 1;
+        /* scale ms to jiffies */
+        interval = msecs_to_jiffies(interval);
+        if (unlikely(!interval))
+            interval = 1;
 
-            if (j - sd->last_balance >= interval) {
-                if (load_balance(this_cpu, this_rq, sd, idle)) {
-                    /* We've pulled tasks over so no longer idle */
-                    idle = NOT_IDLE;
-                }
-                sd->last_balance += interval;
+        if (j - sd->last_balance >= interval) {
+            if (load_balance(this_cpu, this_rq, sd, idle)) {
+                /* We've pulled tasks over so no longer idle */
+                idle = NOT_IDLE;
             }
+            sd->last_balance += interval;
         }
     }
-    '''
+}
+```
 
 当idle标志位是SCHED_IDLE时，表示当前CPU处理器空闲，就会以很高的频繁来调用load_balance（1、2个时钟节拍），反之表示当前CPU并不空闲，会以很低的频繁调用load_balance（10-100ms）。具体的数值要看上面的interval了。 
 
