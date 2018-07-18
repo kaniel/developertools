@@ -19,51 +19,52 @@ struct list_head queue[MAX_PRIO];     与上面的bitmap是对应的，它存储
 看看BITMAP_SIZE是怎么算出来的：#define BITMAP_SIZE ((((MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
 
 那么，LINUX默认配置（如果你用默认选项编译内核的话）MAX_PRIO是140，就是说一共内核对进程一共定义了140种优先级。等待某个CPU来处理的进程中，可能包含许多种优先级的进程，但，LINUX是个抢占式调度算法的操作系统，就是说，需要调度时一定是找到最高优先级的进程执行。上面的BITMAP_SIZE值根据MAX_PRIO算出来为5，那么bitmap实际是32*5=160位，这样就包含了MAX_PRIO的140位。优先级队列是怎么使用的？看2649行代码：idx = sched_find_first_bit(array->bitmap);这个方法就用来快速的找到优先级最高的队列。看看它的实现可以方便我们理解这个优先级位的设计：
-	
-	static inline int sched_find_first_bit(unsigned long *b)
-	{
-		if (unlikely(b[0]))
-		    return __ffs(b[0]);
-		if (unlikely(b[1]))
-		    return __ffs(b[1]) + 32;
-		if (unlikely(b[2]))
-		    return __ffs(b[2]) + 64;
-		if (b[3])
-		    return __ffs(b[3]) + 96;
-		return __ffs(b[4]) + 128;
-	}
+```c	
+static inline int sched_find_first_bit(unsigned long *b)
+{
+	if (unlikely(b[0]))
+	    return __ffs(b[0]);
+	if (unlikely(b[1]))
+	    return __ffs(b[1]) + 32;
+	if (unlikely(b[2]))
+	    return __ffs(b[2]) + 64;
+	if (b[3])
+	    return __ffs(b[3]) + 96;
+	return __ffs(b[4]) + 128;
+}
+```
 
 那么__ffs是干什么的？
+```c
+static inline int __ffs(int x)
+{
+    int r = 0;
 
-	static inline int __ffs(int x)
-	{
-	    int r = 0;
- 
-	    if (!x)
-		    return 0;
-	    if (!(x & 0xffff)) { //两个数取与
-		    x >>= 16;    //把x的值向右移16位  (减小2的n次方) 再赋值给x
-		    r += 16;
-	    }
-	    if (!(x & 0xff)) {
-		    x >>= 8;
-		    r += 8;
-	    }
-	    if (!(x & 0xf)) {
-		    x >>= 4;
-		    r += 4;
-	    }
-	    if (!(x & 3)) {
-		    x >>= 2;
-		    r += 2;
-	    }
-	    if (!(x & 1)) {
-		    x >>= 1;
-		    r += 1;
-	    }
-	    return r;
+    if (!x)
+	    return 0;
+    if (!(x & 0xffff)) { //两个数取与
+	    x >>= 16;    //把x的值向右移16位  (减小2的n次方) 再赋值给x
+	    r += 16;
     }
-
+    if (!(x & 0xff)) {
+	    x >>= 8;
+	    r += 8;
+    }
+    if (!(x & 0xf)) {
+	    x >>= 4;
+	    r += 4;
+    }
+    if (!(x & 3)) {
+	    x >>= 2;
+	    r += 2;
+    }
+    if (!(x & 1)) {
+	    x >>= 1;
+	    r += 1;
+    }
+    return r;
+}
+```
 
 sched_find_first_bit返回值就是最高优先级所在队列的序号，与queue是对应使用的哈，queue = array->queue + idx;这样就取到了要处理的进程队列。这个设计在查找优先级时是非常快的，非常值得我们学习。
 
