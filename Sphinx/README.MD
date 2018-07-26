@@ -1,4 +1,4 @@
-### Sphinx 的介绍和原理探索
+### [Sphinx 的介绍和原理探索](https://segmentfault.com/a/1190000004981463)
 
 #### What/Sphinx是什么
 定义：Sphinx是一个全文检索引擎。
