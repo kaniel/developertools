@@ -148,11 +148,11 @@ ngram_len = 0
 
 使用indexer程序做索引
 
-![indexer](/Sphinx/images/sphinx indexer.png)
+![indexer](/Sphinx/images/sphinx_indexer.png)
 
 查询
 
-![搜索示例](/Sphinx/images/sphinx 搜索示例.png)
+![搜索示例](/Sphinx/images/sphinx搜索示例.png)
 
 可以看到，配置文件中的add_time被返回了，如上图的1所示。而sql_query_info返回的信息如上图的2所示。
 ```
